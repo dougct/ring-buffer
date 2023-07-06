@@ -64,45 +64,6 @@ TEST(RingBuffer, ReadRingBufferTest) {
   }
 }
 
-TEST(RingBuffer, RingBufferPerformanceTest) {
-  const size_t iter = 100000;
-  RingBuffer<size_t> ring(iter / 1000 + 1);
-  std::atomic<bool> flag(false);
-  size_t produced = 0, consumed = 0;
-  long sum = 0;
-  std::thread producer([&] {
-    while (!flag) {
-      ;
-    }
-
-    for (size_t i = 0; i < iter; ++i) {
-      if (ring.push(i)) {
-        sum += i;
-        produced++;
-      }
-    }
-  });
-
-  flag = true;
-  for (size_t i = 0; i < iter; ++i) {
-    if (consumed == produced) {
-      break;
-    }
-
-    while (!ring.front()) {
-      ;
-    }
-    sum -= *ring.front();
-    ring.pop();
-    consumed++;
-  }
-
-  EXPECT_EQ(ring.front(), nullptr);
-  EXPECT_EQ(sum, 0L);
-
-  producer.join();
-}
-
 int main(int argc, char* argv[]) {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

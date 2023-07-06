@@ -8,5 +8,9 @@ else
 		./a.out
 endif
 
+bench:
+		clang++ -std=c++20 -Wall -Wextra -O3 Benchmark.cpp
+		./a.out
+
 clean:
 		rm a.out

@@ -16,3 +16,5 @@ make test version=single
 ```
 
 And just do `make test` to run the tests for the multi-thread ring buffer.
+
+To run a simple benchmark, just do `make bench`.
