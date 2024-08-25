@@ -51,7 +51,7 @@ struct SingleThreadedRingBuffer {
 
   template <class... Args>
   bool push(Args&&... recordArgs) {
-    const auto currentWrite = writeIndex_;
+    const auto currentWrite = writeIndex_.load();
     auto nextRecord = currentWrite + 1;
     if (nextRecord == size_) {
       nextRecord = 0;
@@ -68,7 +68,7 @@ struct SingleThreadedRingBuffer {
 
   // Returns a pointer to the value at the front of the queue (for use in-place)
   T* front() {
-    const auto currentRead = readIndex_;
+    const auto currentRead = readIndex_.load();
     if (currentRead == writeIndex_) {
       // The queue is empty
       return nullptr;
@@ -78,7 +78,7 @@ struct SingleThreadedRingBuffer {
 
   // The queue must not be empty
   void pop() {
-    const auto currentRead = readIndex_;
+    const auto currentRead = readIndex_.load();
     assert(currentRead != writeIndex_);
 
     auto nextRecord = currentRead + 1;
@@ -124,7 +124,7 @@ struct SingleThreadedRingBuffer {
  private:
   const size_t size_;
   T* const records_;
-  size_t readIndex_;
-  size_t writeIndex_;
+  std::atomic<uint32_t> readIndex_;
+  std::atomic<uint32_t> writeIndex_;
 };
 
