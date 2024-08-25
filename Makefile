@@ -1,7 +1,7 @@
 
 test:
 ifeq ($(version),single)
-		clang++ -std=c++20 -Wall -Wextra -lgtest SingleThreadRingBufferTest.cpp
+		clang++ -std=c++20 -Wall -Wextra -lgtest SingleThreadedRingBufferTest.cpp
 		./a.out
 else
 		clang++ -std=c++20 -Wall -Wextra -lgtest RingBufferTest.cpp

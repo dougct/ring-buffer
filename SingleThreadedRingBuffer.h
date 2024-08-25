@@ -11,17 +11,17 @@
 
 // Lock-free since producer single consumer queue
 template <class T>
-struct RingBuffer {
+struct SingleThreadedRingBuffer {
   typedef T value_type;
 
   // Avoind copying
-  RingBuffer(const RingBuffer&) = delete;
-  RingBuffer& operator=(const RingBuffer&) = delete;
+  SingleThreadedRingBuffer(const SingleThreadedRingBuffer&) = delete;
+  SingleThreadedRingBuffer& operator=(const SingleThreadedRingBuffer&) = delete;
 
   // The number of usable slots in the queue at any given time
   // is actually (size-1), so if you start with an empty queue,
   // isFull() will return true after size-1 insertions.
-  explicit RingBuffer(uint32_t size)
+  explicit SingleThreadedRingBuffer(uint32_t size)
       : size_(size),
         records_(static_cast<T*>(std::malloc(sizeof(T) * size))),
         readIndex_(0),
@@ -32,7 +32,7 @@ struct RingBuffer {
     }
   }
 
-  ~RingBuffer() {
+  ~SingleThreadedRingBuffer() {
     // No real synchronization needed at destructor time: only one
     // thread can be doing this.
     if (!std::is_trivially_destructible<T>::value) {
@@ -51,14 +51,14 @@ struct RingBuffer {
 
   template <class... Args>
   bool push(Args&&... recordArgs) {
-    const auto currentWrite = writeIndex_.load(std::memory_order_relaxed);
+    const auto currentWrite = writeIndex_;
     auto nextRecord = currentWrite + 1;
     if (nextRecord == size_) {
       nextRecord = 0;
     }
-    if (nextRecord != readIndex_.load(std::memory_order_acquire)) {
+    if (nextRecord != readIndex_) {
       new (&records_[currentWrite]) T(std::forward<Args>(recordArgs)...);
-      writeIndex_.store(nextRecord, std::memory_order_release);
+      writeIndex_ = nextRecord;
       return true;
     }
 
@@ -68,8 +68,8 @@ struct RingBuffer {
 
   // Returns a pointer to the value at the front of the queue (for use in-place)
   T* front() {
-    auto const currentRead = readIndex_.load(std::memory_order_relaxed);
-    if (currentRead == writeIndex_.load(std::memory_order_acquire)) {
+    const auto currentRead = readIndex_;
+    if (currentRead == writeIndex_) {
       // The queue is empty
       return nullptr;
     }
@@ -78,28 +78,27 @@ struct RingBuffer {
 
   // The queue must not be empty
   void pop() {
-    const auto currentRead = readIndex_.load(std::memory_order_relaxed);
-    assert(currentRead != writeIndex_.load(std::memory_order_acquire));
+    const auto currentRead = readIndex_;
+    assert(currentRead != writeIndex_);
 
     auto nextRecord = currentRead + 1;
     if (nextRecord == size_) {
       nextRecord = 0;
     }
     records_[currentRead].~T();
-    readIndex_.store(nextRecord, std::memory_order_release);
+    readIndex_ = nextRecord;
   }
 
   bool empty() const {
-    return readIndex_.load(std::memory_order_acquire) ==
-           writeIndex_.load(std::memory_order_acquire);
+    return readIndex_ == writeIndex_;
   }
 
   bool full() const {
-    auto nextRecord = writeIndex_.load(std::memory_order_acquire) + 1;
+    auto nextRecord = writeIndex_ + 1;
     if (nextRecord == size_) {
       nextRecord = 0;
     }
-    if (nextRecord != readIndex_.load(std::memory_order_acquire)) {
+    if (nextRecord != readIndex_) {
       return false;
     }
     // The queue is full
@@ -112,8 +111,7 @@ struct RingBuffer {
   //   be removing items concurrently).
   // * It is undefined to call this from any other thread.
   size_t sizeEstimate() const {
-    int ret = writeIndex_.load(std::memory_order_acquire) -
-              readIndex_.load(std::memory_order_acquire);
+    int ret = writeIndex_ - readIndex_;
     if (ret < 0) {
       ret += size_;
     }
@@ -124,20 +122,9 @@ struct RingBuffer {
   size_t capacity() const { return size_ - 1; }
 
  private:
-#ifdef __cpp_lib_hardware_interference_size
-  static constexpr size_t kCacheLineSize =
-      std::hardware_destructive_interference_size;
-#else
-  static constexpr size_t kCacheLineSize = 64;
-#endif
-  using AtomicIndex = std::atomic<size_t>;
-
-  char pad0_[kCacheLineSize];
-  const uint32_t size_;
+  const size_t size_;
   T* const records_;
-
-  alignas(kCacheLineSize) AtomicIndex readIndex_;
-  alignas(kCacheLineSize) AtomicIndex writeIndex_;
-
-  char pad1_[kCacheLineSize - sizeof(AtomicIndex)];
+  size_t readIndex_;
+  size_t writeIndex_;
 };
+

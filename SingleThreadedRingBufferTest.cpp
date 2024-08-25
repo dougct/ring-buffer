@@ -1,10 +1,10 @@
 #include "gtest/gtest.h"
 
-#include "SingleThreadRingBuffer.h"
+#include "SingleThreadedRingBuffer.h"
 
-TEST(SingleThreadRingBuffer, SingleThreadSimpleTest) {
+TEST(SingleThreadedRingBuffer, SingleThreadSimpleTest) {
   uint32_t numItems = 10;
-  SingleThreadRingBuffer<int> ring(numItems + 1);
+  SingleThreadedRingBuffer<int> ring(numItems + 1);
   EXPECT_TRUE(ring.empty());
   EXPECT_TRUE(ring.push(1));
   EXPECT_EQ(*ring.front(), 1);
@@ -12,9 +12,9 @@ TEST(SingleThreadRingBuffer, SingleThreadSimpleTest) {
   EXPECT_TRUE(ring.empty());
 }
 
-TEST(SingleThreadRingBuffer, SingleThreadPopulateTest) {
+TEST(SingleThreadedRingBuffer, SingleThreadPopulateTest) {
   uint32_t numItems = 10;
-  SingleThreadRingBuffer<int> ring(numItems + 1);
+  SingleThreadedRingBuffer<int> ring(numItems + 1);
   for (uint32_t i = 0; i < numItems; i++) {
     EXPECT_TRUE(ring.push(i));
   }
@@ -27,9 +27,9 @@ TEST(SingleThreadRingBuffer, SingleThreadPopulateTest) {
   EXPECT_TRUE(ring.empty());
 }
 
-TEST(SingleThreadRingBuffer, SingleThreadEmptyTest) {
+TEST(SingleThreadedRingBuffer, SingleThreadEmptyTest) {
   uint32_t numItems = 10;
-  SingleThreadRingBuffer<int> ring(numItems + 1);
+  SingleThreadedRingBuffer<int> ring(numItems + 1);
   for (uint32_t i = 0; i < numItems; i++) {
     EXPECT_TRUE(ring.push(i));
     ring.pop();
@@ -37,9 +37,9 @@ TEST(SingleThreadRingBuffer, SingleThreadEmptyTest) {
   }
 }
 
-TEST(SingleThreadRingBuffer, SingleThreadFrontPtrTest) {
+TEST(SingleThreadedRingBuffer, SingleThreadFrontPtrTest) {
   uint32_t numItems = 100;
-  SingleThreadRingBuffer<int> ring(numItems + 1);
+  SingleThreadedRingBuffer<int> ring(numItems + 1);
   for (uint32_t i = 0; i < numItems; i++) {
     EXPECT_TRUE(ring.push(i));
     const uint32_t front = *ring.front();
@@ -49,9 +49,9 @@ TEST(SingleThreadRingBuffer, SingleThreadFrontPtrTest) {
   }
 }
 
-TEST(SingleThreadRingBuffer, SingleThreadReadTest) {
+TEST(SingleThreadedRingBuffer, SingleThreadReadTest) {
   uint32_t numItems = 100;
-  SingleThreadRingBuffer<int> ring(numItems + 1);
+  SingleThreadedRingBuffer<int> ring(numItems + 1);
   for (uint32_t i = 0; i < numItems; i++) {
     EXPECT_TRUE(ring.push(i));
     int* front = ring.front();
