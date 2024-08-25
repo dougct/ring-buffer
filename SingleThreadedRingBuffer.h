@@ -124,7 +124,7 @@ struct SingleThreadedRingBuffer {
  private:
   const size_t size_;
   T* const records_;
-  std::atomic<uint32_t> readIndex_;
-  std::atomic<uint32_t> writeIndex_;
+  std::atomic<size_t> readIndex_;
+  std::atomic<size_t> writeIndex_;
 };
 
